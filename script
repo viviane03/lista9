@@ -1,0 +1,140 @@
+const colors = [
+  '#FF5733', '#FF33A3', '#D733FF', '#5733FF',
+  '#33A3FF', '#33FFD7', '#33FF57', '#A3FF33'
+];
+
+const minPairs = 4; // Quantidade mínima de pares
+const maxPairs = 8; // Quantidade máxima de pares
+
+const levels = [
+  { pairs: 4 }, // Nível 1 com 4 pares
+  { pairs: 5 }, // Nível 2 com 5 pares
+  { pairs: 6 }, // Nível 3 com 6 pares
+  { pairs: 7 }, // Nível 4 com 7 pares
+  { pairs: 8 }, // Nível 5 com 8 pares
+  // Adicione mais níveis conforme desejado
+];
+
+let flippedCards = [];
+let matchedCards = [];
+let moves = 0;
+let timerInterval;
+let timerSeconds = 0;
+let currentLevel = 1;
+let gameStarted = false;
+
+function createMemoryCard(color) {
+  const card = document.createElement("div");
+  card.classList.add("memory-card");
+  card.style.setProperty('--color', color);
+  card.addEventListener("click", () => flipCard(card));
+  return card;
+}
+
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+function createMemoryGame() {
+  const memoryGame = document.getElementById("memoryGame");
+  memoryGame.innerHTML = "";
+  flippedCards = [];
+  matchedCards = [];
+  moves = 0;
+  timerSeconds = 0;
+  clearInterval(timerInterval);
+  updateMoves();
+
+  const level = levels[currentLevel - 1];
+  const totalPairs = level.pairs;
+  const availableColors = colors.slice(0, totalPairs);
+  const pairsColors = availableColors.concat(availableColors);
+  shuffle(pairsColors);
+
+  pairsColors.forEach(color => {
+    const card = createMemoryCard(color);
+    memoryGame.appendChild(card);
+  });
+
+  if (gameStarted) {
+    startTimer();
+  }
+}
+
+function flipCard(card) {
+  if (gameStarted && flippedCards.length < 2 && !flippedCards.includes(card) && !matchedCards.includes(card)) {
+    card.classList.add("flip");
+    flippedCards.push(card);
+
+    if (flippedCards.length === 2) {
+      setTimeout(checkMatch, 1000);
+    }
+  }
+}
+
+function checkMatch() {
+  const [firstCard, secondCard] = flippedCards;
+  const isMatch = firstCard.style.getPropertyValue('--color') === secondCard.style.getPropertyValue('--color');
+
+  moves++;
+  updateMoves();
+
+  if (isMatch) {
+    flippedCards.forEach(card => {
+      card.classList.add("matched");
+      matchedCards.push(card);
+    });
+  } else {
+    flippedCards.forEach(card => card.classList.remove("flip"));
+  }
+
+  flippedCards = [];
+
+  if (matchedCards.length === levels[currentLevel - 1].pairs * 2) {
+    clearInterval(timerInterval);
+    setTimeout(() => {
+      alert("Parabéns! Você completou o nível "+ currentLevel + "!");
+      currentLevel++;
+      if (currentLevel <= levels.length) {
+        createMemoryGame();
+      } else {
+        alert("Você completou todos os níveis!");
+      }
+    }, 500);
+  }
+}
+
+function updateMoves() {
+  const movesDisplay = document.getElementById("moves");
+  movesDisplay.textContent = "Movimentos: " + moves;
+}
+
+function startTimer() {
+  const timerDisplay = document.getElementById("timer");
+  timerSeconds = 0;
+  timerInterval = setInterval(() => {
+    timerSeconds++;
+    timerDisplay.textContent = "Tempo: " + timerSeconds + "s";
+  }, 1000);
+}
+
+function startGame() {
+  if (!gameStarted) {
+    gameStarted = true; // Define que o jogo foi iniciado
+    createMemoryGame();
+  }
+}
+
+function restartGame() {
+  currentLevel = 1; // Reinicia o nível atual para 1
+  gameStarted = false; // Define que o jogo não foi iniciado
+  clearInterval(timerInterval); // Limpa o intervalo do cronômetro
+  const timerDisplay = document.getElementById("timer");
+  timerDisplay.textContent = "Tempo: 0s"; // Reseta o texto do cronômetro para 0
+  createMemoryGame();
+}
+
+createMemoryGame();
